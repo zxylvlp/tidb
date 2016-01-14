@@ -137,15 +137,9 @@ func (b *planBuilder) buildSelect(sel *ast.SelectStmt) Plan {
 	}
 	var p Plan
 	if sel.From != nil {
-		p = b.buildJoin(sel.From.TableRefs)
+		p, b.err = optimizeJoin(sel)
 		if b.err != nil {
 			return nil
-		}
-		if sel.Where != nil {
-			p = b.buildFilter(p, sel.Where)
-			if b.err != nil {
-				return nil
-			}
 		}
 		if sel.LockTp != ast.SelectLockNone {
 			p = b.buildSelectLock(p, sel.LockTp)
@@ -211,13 +205,13 @@ func (b *planBuilder) buildJoin(from *ast.Join) Plan {
 }
 
 // splitWhere split a where expression to a list of AND conditions.
-func (b *planBuilder) splitWhere(where ast.ExprNode) []ast.ExprNode {
+func splitWhere(where ast.ExprNode) []ast.ExprNode {
 	var conditions []ast.ExprNode
 	switch x := where.(type) {
 	case *ast.BinaryOperationExpr:
 		if x.Op == opcode.AndAnd {
 			conditions = append(conditions, x.L)
-			conditions = append(conditions, b.splitWhere(x.R)...)
+			conditions = append(conditions, splitWhere(x.R)...)
 		} else {
 			conditions = append(conditions, x)
 		}
@@ -229,7 +223,7 @@ func (b *planBuilder) splitWhere(where ast.ExprNode) []ast.ExprNode {
 
 func (b *planBuilder) buildFilter(src Plan, where ast.ExprNode) *Filter {
 	filter := &Filter{
-		Conditions: b.splitWhere(where),
+		Conditions: splitWhere(where),
 	}
 	filter.SetSrc(src)
 	filter.SetFields(src.Fields())
