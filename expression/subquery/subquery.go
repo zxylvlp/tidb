@@ -19,7 +19,6 @@ import (
 
 	"github.com/juju/errors"
 	"github.com/pingcap/tidb/context"
-
 	"github.com/pingcap/tidb/expression"
 	"github.com/pingcap/tidb/plan"
 	"github.com/pingcap/tidb/stmt"
@@ -89,7 +88,7 @@ func (sq *SubQuery) Eval(ctx context.Context, args map[interface{}]interface{}) 
 		sq.Val = rows[0]
 		return sq.Val, nil
 	default:
-		return nil, errors.Errorf("Subquery returns more than 1 row")
+		return nil, errors.New("Subquery returns more than 1 row")
 	}
 }
 

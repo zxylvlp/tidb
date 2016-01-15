@@ -132,7 +132,7 @@ func pushRowStack(ctx context.Context, outDataFields []*field.ResultField, fromD
 func updateRowStack(ctx context.Context, outData []interface{}, fromData []interface{}) error {
 	s := getRowStack(ctx)
 	if s == nil {
-		return errors.Errorf("update empty row stack")
+		return errors.New("update empty row stack")
 	}
 
 	t := s.items[len(s.items)-1]
@@ -143,9 +143,8 @@ func updateRowStack(ctx context.Context, outData []interface{}, fromData []inter
 
 func popRowStack(ctx context.Context) error {
 	s := getRowStack(ctx)
-
 	if s == nil || len(s.items) == 0 {
-		return errors.Errorf("pop empty row stack")
+		return errors.New("pop empty row stack")
 	}
 
 	n := len(s.items) - 1

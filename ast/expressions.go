@@ -233,6 +233,8 @@ type SubqueryExpr struct {
 	exprNode
 	// Query is the query SelectNode.
 	Query ResultSetNode
+	// UseOuter represents that whether subquery uses reference to a table for the outer query.
+	UseOuter bool
 }
 
 // Accept implements Node Accept interface.

@@ -210,6 +210,7 @@ func (e *Evaluator) caseExpr(v *ast.CaseExpr) bool {
 }
 
 func (e *Evaluator) subquery(v *ast.SubqueryExpr) bool {
+	// v.Query.(*ast.SelectStmt)
 	return true
 }
 
@@ -263,11 +264,13 @@ func (e *Evaluator) patternIn(n *ast.PatternInExpr) bool {
 		n.SetValue(nil)
 		return true
 	}
-	hasNull := false
+
 	for _, v := range n.List {
 		if types.IsNil(v.GetValue()) {
-			hasNull = true
-			continue
+			// if no matched but we got null in In, return null
+			// e.g 1 in (null, 2, 3) returns null
+			n.SetValue(nil)
+			return true
 		}
 		r, err := types.Compare(n.Expr.GetValue(), v.GetValue())
 		if err != nil {
@@ -279,12 +282,7 @@ func (e *Evaluator) patternIn(n *ast.PatternInExpr) bool {
 			return true
 		}
 	}
-	if hasNull {
-		// if no matched but we got null in In, return null
-		// e.g 1 in (null, 2, 3) returns null
-		n.SetValue(nil)
-		return true
-	}
+
 	n.SetValue(boolToInt64(n.Not))
 	return true
 }

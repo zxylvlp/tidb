@@ -14,6 +14,7 @@
 package executor
 
 import (
+	"fmt"
 	"sort"
 
 	"github.com/juju/errors"
@@ -74,6 +75,13 @@ type Row struct {
 	RowKeys []*RowKeyEntry
 }
 
+func (r *Row) String() string {
+	if r == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("Row(%+v)", *r)
+}
+
 // RowKeyEntry is designed for Delete statement in multi-table mode,
 // we should know which table this row comes from.
 type RowKeyEntry struct {
@@ -81,6 +89,13 @@ type RowKeyEntry struct {
 	Tbl table.Table
 	// Row key.
 	Key string
+}
+
+func (r *RowKeyEntry) String() string {
+	if r == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("RowKeyEntry(%+v)", *r)
 }
 
 // Executor executes a query.

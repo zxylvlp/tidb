@@ -17,6 +17,7 @@ import (
 	"strings"
 
 	"github.com/juju/errors"
+	"github.com/ngaut/log"
 	"github.com/pingcap/tidb/ast"
 	"github.com/pingcap/tidb/context"
 	"github.com/pingcap/tidb/infoschema"
@@ -27,7 +28,9 @@ import (
 
 // Optimize does optimization and creates a Plan.
 // The node must be prepared first.
-func Optimize(ctx context.Context, node ast.Node) (plan.Plan, error) {
+func Optimize(ctx context.Context, node ast.StmtNode) (plan.Plan, error) {
+	log.Infof("sql - %s", node.Text())
+
 	// We have to infer type again because after parameter is set, the expression type may change.
 	if err := InferType(node); err != nil {
 		return nil, errors.Trace(err)
@@ -60,6 +63,10 @@ func Optimize(ctx context.Context, node ast.Node) (plan.Plan, error) {
 			bestPlan = alt
 		}
 	}
+
+	explainStr, _ := plan.Explain(bestPlan)
+	log.Infof("explain sql - %s - %s", node.Text(), explainStr)
+
 	return bestPlan, nil
 }
 
@@ -83,7 +90,7 @@ type supportChecker struct {
 
 func (c *supportChecker) Enter(in ast.Node) (ast.Node, bool) {
 	switch ti := in.(type) {
-	case *ast.SubqueryExpr, *ast.GroupByClause, *ast.HavingClause:
+	case *ast.GroupByClause, *ast.HavingClause:
 		c.unsupported = true
 	case *ast.AggregateFuncExpr:
 		fn := strings.ToLower(ti.F)

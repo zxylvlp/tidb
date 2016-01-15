@@ -61,6 +61,8 @@ type resolverContext struct {
 	fieldList []*ast.ResultField
 	// result fields collected in group by clause.
 	groupBy []*ast.ResultField
+	// TODO
+	subQuery *ast.SubqueryExpr
 
 	// The join node stack is used by on condition to find out
 	// available tables to reference. On condition can only
@@ -144,6 +146,8 @@ func (nr *nameResolver) Enter(inNode ast.Node) (outNode ast.Node, skipChildren b
 		nr.currentContext().inOrderBy = true
 	case *ast.SelectStmt:
 		nr.pushContext()
+	case *ast.SubqueryExpr:
+		nr.currentContext().subQuery = v
 	case *ast.TableRefsClause:
 		nr.currentContext().inTableRefs = true
 	case *ast.UpdateStmt:
@@ -184,6 +188,8 @@ func (nr *nameResolver) Leave(inNode ast.Node) (node ast.Node, ok bool) {
 	case *ast.SelectStmt:
 		v.SetResultFields(nr.currentContext().fieldList)
 		nr.popContext()
+	case *ast.SubqueryExpr:
+		nr.currentContext().subQuery = nil
 	case *ast.InsertStmt:
 		nr.popContext()
 	case *ast.DeleteStmt:
@@ -270,9 +276,14 @@ func (nr *nameResolver) handleColumnName(cn *ast.ColumnNameExpr) {
 		return
 	}
 
-	// Try to resolve the column name form top to bottom in the context stack.
+	// Try to resolve the column name from top to bottom in the context stack.
 	for i := len(nr.contextStack) - 1; i >= 0; i-- {
-		if nr.resolveColumnNameInContext(nr.contextStack[i], cn) {
+		stackCtx := nr.contextStack[i]
+		if nr.resolveColumnNameInContext(stackCtx, cn) {
+			if stackCtx.subQuery != nil {
+
+			}
+
 			// Column is already resolved or encountered an error.
 			return
 		}
